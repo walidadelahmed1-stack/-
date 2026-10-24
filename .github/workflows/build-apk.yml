@@ -22,12 +22,20 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Setup Gradle 9.3.1
-        uses: gradle/actions/setup-gradle@v3
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
         with:
-          gradle-version: '9.3.1'
+          packages: |
+            platform-tools
+            platforms;android-36
+            build-tools;36.0.0
 
-      - name: Create debug.keystore
+      - name: Accept Android SDK Licenses & Channels
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" || true
+
+      - name: Create debug.keystore if missing
         run: |
           if [ ! -f debug.keystore ]; then
             keytool -genkey -v -keystore debug.keystore \
@@ -40,16 +48,32 @@ jobs:
               -dname "CN=Android Debug,O=Android,C=US"
           fi
 
-      - name: Accept Android SDK Licenses
+      - name: Create .env placeholder if missing
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          if [ ! -f .env ]; then
+            touch .env
+          fi
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Grant execute permission for gradlew
+        run: |
+          chmod +x gradlew || true
 
       - name: Build Debug APK
         run: |
-          gradle assembleDebug --stacktrace --no-daemon
+          if [ -f gradlew ]; then
+            ./gradlew assembleDebug --stacktrace --no-daemon
+          else
+            gradle assembleDebug --stacktrace --no-daemon
+          fi
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: app-debug-apk
           path: app/build/outputs/apk/debug/*.apk
