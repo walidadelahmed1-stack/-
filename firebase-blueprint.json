@@ -1,0 +1,61 @@
+{
+  "entities": {
+    "UserProgress": {
+      "title": "UserProgress",
+      "description": "User game progress and synchronized cloud data across devices.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Unique Google user ID"
+        },
+        "starsJson": {
+          "type": "string",
+          "description": "JSON representation of stars per level"
+        },
+        "scoresJson": {
+          "type": "string",
+          "description": "JSON representation of scores per level"
+        },
+        "solvedPuzzles": {
+          "type": "array",
+          "description": "Array of solved level IDs",
+          "items": {
+            "type": "string"
+          }
+        },
+        "storiesSeen": {
+          "type": "array",
+          "description": "Array of story chapter IDs seen",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "highestChapter": {
+          "type": "integer",
+          "description": "Highest chapter reached"
+        },
+        "totalStars": {
+          "type": "integer",
+          "description": "Total stars accumulated"
+        },
+        "totalScore": {
+          "type": "integer",
+          "description": "Cumulative total score"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last synchronization timestamp"
+        }
+      },
+      "required": ["userId", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/progress/data": {
+      "schema": "UserProgress",
+      "description": "User private synchronized game progress"
+    }
+  }
+}

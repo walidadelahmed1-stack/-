@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ad-services-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <attribution allowAdPartners="false" />
+    <topics allowAdPartners="false" />
+    <protected-audiences allowAdPartners="false" />
+</ad-services-config>

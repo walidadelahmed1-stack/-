@@ -1,0 +1,64 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUserProgress(data) {
+      return data.userId is string &&
+             data.userId.size() > 0 &&
+             data.userId.size() <= 128 &&
+             (!('starsJson' in data) || (data.starsJson is string && data.starsJson.size() <= 500000)) &&
+             (!('scoresJson' in data) || (data.scoresJson is string && data.scoresJson.size() <= 500000)) &&
+             (!('solvedPuzzles' in data) || (data.solvedPuzzles is list && data.solvedPuzzles.size() <= 6000)) &&
+             (!('storiesSeen' in data) || (data.storiesSeen is list && data.storiesSeen.size() <= 6000)) &&
+             (!('highestChapter' in data) || (data.highestChapter is int && data.highestChapter >= 1 && data.highestChapter <= 6000)) &&
+             (!('totalStars' in data) || (data.totalStars is int && data.totalStars >= 0)) &&
+             (!('totalScore' in data) || (data.totalScore is int && data.totalScore >= 0)) &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId}/progress/{progressDoc} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+
+      allow list: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+
+      allow create: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll(['userId', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'starsJson', 'scoresJson', 'solvedPuzzles', 'storiesSeen', 'highestChapter', 'totalStars', 'totalScore', 'updatedAt']) &&
+                       isValidUserProgress(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       incoming().userId == existing().userId &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['starsJson', 'scoresJson', 'solvedPuzzles', 'storiesSeen', 'highestChapter', 'totalStars', 'totalScore', 'updatedAt']) &&
+                       isValidUserProgress(incoming());
+
+      allow delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+    }
+  }
+}
