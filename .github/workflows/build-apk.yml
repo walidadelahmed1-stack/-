@@ -20,20 +20,18 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: gradle
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
           packages: |
             platform-tools
-            platforms;android-36
-            build-tools;36.0.0
+            platforms;android-35
+            build-tools;35.0.0
 
-      - name: Accept Android SDK Licenses & Channels
+      - name: Accept Android SDK Licenses
         run: |
           yes | sdkmanager --licenses || true
-          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" || true
 
       - name: Create debug.keystore if missing
         run: |
@@ -66,9 +64,9 @@ jobs:
       - name: Build Debug APK
         run: |
           if [ -f gradlew ]; then
-            ./gradlew assembleDebug --stacktrace --no-daemon
+            ./gradlew assembleDebug -x test -x lint --no-configuration-cache -Dorg.gradle.workers.max=2 --stacktrace
           else
-            gradle assembleDebug --stacktrace --no-daemon
+            gradle assembleDebug -x test -x lint --no-configuration-cache -Dorg.gradle.workers.max=2 --stacktrace
           fi
 
       - name: Upload APK Artifact
